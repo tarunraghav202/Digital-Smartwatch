@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Smartwatch</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f2f2f2;
+        margin: 0;
+    }
+
+    #watch {
+        width: 250px;
+        height: 250px;
+        background-color: #2c3e50;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #fff;
+        font-size: 30px;
+        text-align: center;
+        flex-direction: column;
+        position: relative;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    #time {
+        font-size: 58px;
+        margin-top: -30px;
+    }
+
+    #seconds {
+        color: #e74c3c;
+        font-size: 24px;
+        margin-top: -10px;
+    }
+
+    #date {
+        font-size: 18px;
+        margin-top: -2px;
+    }
+
+    #stopwatch {
+        font-size: 40px;
+        display: none;
+    }
+
+    .button {
+        position: absolute;
+        width: 30px;
+        height: 30px;
+        background-color: #fff;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+        font-size: 16px;
+        color: #333;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        border: 2px solid #fff; /* Add border to each button */
+    }
+
+    .button:hover {
+        background-color: #ccc;
+    }
+
+    #button1 {
+        top: 5px;
+        left: 5px;
+    }
+
+    #button2 {
+        top: 5px;
+        right: 5px;
+    }
+
+    #button3 {
+        bottom: 5px;
+        left: 5px;
+    }
+
+    #button4 {
+        bottom: 5px;
+        right: 5px;
+    }
+
+    .glow {
+        animation: glow 1s ease-in-out infinite alternate;
+    }
+
+    @keyframes glow {
+        0% {
+            background-color: #e74c3c;
+            box-shadow: 0 0 20px #e74c3c;
+        }
+        100% {
+            background-color: #2c3e50;
+            box-shadow: none;
+        }
+    }
+
+    .days {
+        position: absolute;
+        color: #ccc;
+        font-size: 14px;
+        font-weight: bold;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        transform-origin: center;
+        margin-top: 100px;
+    }
+
+    .day {
+        width: 20px;
+        height: 20px;
+        text-align: center;
+        margin: 0 5px;
+    }
+</style>
+</head>
+<body>
+<audio id="beepSound" src="./beep.mp3"></audio>
+<div id="watch">
+    <div id="time"></div>
+    <div id="seconds"></div>
+    <div id="date"></div>
+    <div id="stopwatch">00:00:00</div>
+    <div class="days">
+        <div class="day">Su</div>
+        <div class="day">Mo</div>
+        <div class="day">Tu</div>
+        <div class="day">We</div>
+        <div class="day">Th</div>
+        <div class="day">Fr</div>
+        <div class="day">Sa</div>
+    </div>
+    <div class="button" id="button1">1</div>
+    <div class="button" id="button2">2</div>
+    <div class="button" id="button3">3</div>
+    <div class="button" id="button4">4</div>
+</div>
+<script>
+let stopwatchRunning = false;
+let stopwatchInterval;
+let stopwatchSeconds = 0;
+let stopwatchMinutes = 0;
+let stopwatchHours = 0;
+let stopwatchMilliseconds = 0;
+
+function getRandomColor() {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
+document.querySelectorAll('.button').forEach(button => {
+    button.addEventListener('click', () => {
+        document.getElementById('beepSound').play();
+    });
+});
+
+document.getElementById('button1').addEventListener('click', function() {
+    const watch = document.getElementById('watch');
+    const glowColor = getRandomColor();
+    watch.style.setProperty('--glow-color', glowColor);
+    watch.classList.add('glow');
+    setTimeout(() => {
+        watch.classList.remove('glow');
+    }, 7000); // Remove glow effect after 7 seconds
+});
+
+document.getElementById('button3').addEventListener('click', function() {
+    const watch = document.getElementById('watch');
+    const timeDisplay = document.getElementById('time');
+    const stopwatchDisplay = document.getElementById('stopwatch');
+    
+    if (stopwatchDisplay.style.display === 'none') {
+        stopwatchDisplay.style.display = 'block';
+        timeDisplay.style.display = 'none';
+        // startStopwatch(); // Start the stopwatch immediately
+    } else {
+        stopwatchDisplay.style.display = 'none';
+        timeDisplay.style.display = 'block';
+    }
+});
+
+document.getElementById('button2').addEventListener('click', function() {
+    if (stopwatchRunning) {
+        stopStopwatch();
+    } else {
+        startStopwatch();
+    }
+});
+
+document.getElementById('button4').addEventListener('click', function() {
+    stopStopwatch();
+    stopwatchSeconds = 0;
+    stopwatchMinutes = 0;
+    stopwatchHours = 0;
+    stopwatchMilliseconds = 0;
+    updateStopwatchDisplay();
+});
+
+function startStopwatch() {
+    stopwatchRunning = true;
+    stopwatchInterval = setInterval(function() {
+        stopwatchMilliseconds++;
+        if (stopwatchMilliseconds === 1000) {
+            stopwatchMilliseconds = 0;
+            stopwatchSeconds++;
+            if (stopwatchSeconds === 60) {
+                stopwatchSeconds = 0;
+                stopwatchMinutes++;
+                if (stopwatchMinutes === 60) {
+                    stopwatchMinutes = 0;
+                    stopwatchHours++;
+                }
+            }
+        }
+        updateStopwatchDisplay();
+    }, 1); // Update every 1 millisecond
+}
+
+function stopStopwatch() {
+    clearInterval(stopwatchInterval);
+    stopwatchRunning = false;
+}
+
+function updateStopwatchDisplay() {
+    const stopwatchDisplay = document.getElementById('stopwatch');
+    stopwatchDisplay.textContent = `${String(stopwatchHours).padStart(2, '0')}:${String(stopwatchMinutes).padStart(2, '0')}:${String(stopwatchSeconds).padStart(2, '0')}:${String(stopwatchMilliseconds).padStart(3, '0')}`;
+    }
+    
+    function updateClock() {
+    const now = new Date();
+    const days = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+    const dayIndex = now.getDay();
+    const day = days[dayIndex];
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const date = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    
+    const timeString = `${hours}:${minutes}`;
+    const dateString = `${date}/${month}/${year}`;
+    const secondsString = `${seconds}`;
+    
+    document.getElementById('time').textContent = timeString;
+    document.getElementById('seconds').textContent = secondsString;
+    document.getElementById('date').textContent = dateString;
+    
+    const dayElements = document.querySelectorAll('.day');
+    dayElements.forEach((element, index) => {
+    if (index === dayIndex) {
+    element.style.color = "#e74c3c";
+    } else {
+    element.style.color = "#ccc";
+    }
+    });
+    }
+    
+    setInterval(updateClock, 1000);
+    
+    updateClock();
+    </script>
+    </body>
+    </html>
